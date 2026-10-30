@@ -11,6 +11,7 @@ const PATHS: Record<string, string> = {
   plus: 'M12 5v14M5 12h14',
   close: 'M18 6L6 18M6 6l12 12',
   check: 'M20 6L9 17l-5-5',
+  'chevron-down': 'M6 9l6 6 6-6',
   edit: 'M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z',
   trash: 'M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6',
   pin: 'M12 17v5M9 10.76V5a1 1 0 011-1h4a1 1 0 011 1v5.76l2.5 3.24H6.5L9 10.76z',

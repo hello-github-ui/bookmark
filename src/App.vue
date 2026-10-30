@@ -8,6 +8,7 @@ import BulkAddDialog from './components/BulkAddDialog.vue'
 import CategoryEditor from './components/CategoryEditor.vue'
 import CategorySection from './components/CategorySection.vue'
 import CommandPalette from './components/CommandPalette.vue'
+import OrganizeDialog from './components/OrganizeDialog.vue'
 import ContextMenu from './components/ContextMenu.vue'
 import HeroHeader from './components/HeroHeader.vue'
 import SearchBar from './components/SearchBar.vue'
@@ -274,6 +275,7 @@ async function onMove(): Promise<void> {
   <BulkAddDialog />
   <ShortcutsDialog />
   <CommandPalette />
+  <OrganizeDialog />
   <ContextMenu />
   <ToastHost />
 </template>

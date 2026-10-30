@@ -282,3 +282,130 @@ export async function emptyTrash(): Promise<number> {
   await db.bookmarks.bulkDelete(ids)
   return ids.length
 }
+
+/* --------------------------------------------------------------- 智能整理 */
+
+export interface OrganizeAssignment {
+  bookmarkId: string
+  /** 目标分类。按名字查找已有分类，没有才新建 —— 避免整理出一堆重名分类 */
+  target: { name: string; icon: string; color: string }
+  /** 要并入的标签（原文件夹层级）。与已有标签去重 */
+  tags?: string[]
+}
+
+export interface OrganizeResult {
+  moved: number
+  createdCategories: number
+  removedCategories: number
+}
+
+/**
+ * 执行一次智能整理。
+ *
+ * 整个过程放在单个事务里：要么全成，要么全不动。
+ * 中途失败最怕的是「分类建好了但书签没搬过去」，那会留下一堆空分类。
+ *
+ * @param removeCategoryIds 整理后允许删除的空分类 id。
+ *   由调用方（规划阶段）算好并显式传入，而不是在这里自己判断 ——
+ *   否则一不小心会把用户手建的空分类也删了。
+ */
+export async function applyOrganize(
+  assignments: OrganizeAssignment[],
+  removeCategoryIds: string[] = [],
+): Promise<OrganizeResult> {
+  const ts = now()
+
+  return db.transaction('rw', db.categories, db.bookmarks, async () => {
+    const allCats = await db.categories.toArray()
+    const alive = allCats.filter((c) => c.deletedAt === 0)
+
+    // 按名字建索引，用来复用已有分类
+    const byName = new Map<string, Category>()
+    for (const c of alive) byName.set(c.name.trim(), c)
+
+    let maxSort = alive.reduce((m, c) => Math.max(m, c.sort), 0)
+    let createdCategories = 0
+
+    // 1. 确保目标分类都存在
+    const targetIds = new Map<string, string>() // name -> categoryId
+    for (const a of assignments) {
+      const name = a.target.name.trim()
+      if (targetIds.has(name)) continue
+      const existing = byName.get(name)
+      if (existing) {
+        targetIds.set(name, existing.id)
+        continue
+      }
+      maxSort += SORT_STEP
+      const created: Category = {
+        id: uid('cat'),
+        name,
+        icon: a.target.icon || '📁',
+        color: a.target.color || '',
+        sort: maxSort,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: 0,
+      }
+      await db.categories.add(created)
+      byName.set(name, created)
+      targetIds.set(name, created.id)
+      createdCategories++
+    }
+
+    // 2. 每个目标分类里排序值从当前最大值往后接，避免和已有书签撞号
+    const tailSort = new Map<string, number>()
+    for (const catId of new Set(targetIds.values())) {
+      const siblings = await db.bookmarks.where('categoryId').equals(catId).toArray()
+      const max = siblings.filter((b) => b.deletedAt === 0).reduce((m, b) => Math.max(m, b.sort), 0)
+      tailSort.set(catId, max)
+    }
+
+    // 3. 搬书签
+    const ids = assignments.map((a) => a.bookmarkId)
+    const rows = await db.bookmarks.bulkGet(ids)
+    const rowById = new Map<string, Bookmark>()
+    for (const b of rows) if (b) rowById.set(b.id, b)
+
+    const updates: Bookmark[] = []
+    for (const a of assignments) {
+      const bm = rowById.get(a.bookmarkId)
+      if (!bm || bm.deletedAt !== 0) continue
+      const catId = targetIds.get(a.target.name.trim())
+      if (!catId) continue
+
+      const nextSort = (tailSort.get(catId) ?? 0) + SORT_STEP
+      tailSort.set(catId, nextSort)
+
+      // 标签去重，保留原有的
+      const merged = a.tags?.length
+        ? Array.from(new Set([...bm.tags, ...a.tags])).slice(0, 12)
+        : bm.tags
+
+      updates.push({ ...bm, categoryId: catId, tags: merged, sort: nextSort, updatedAt: ts })
+    }
+    if (updates.length) await db.bookmarks.bulkPut(updates)
+
+    // 4. 清理指定的空分类（软删除，这样删除动作也能同步出去）
+    let removedCategories = 0
+    if (removeCategoryIds.length) {
+      const movedIds = new Set(updates.map((b) => b.id))
+      for (const id of removeCategoryIds) {
+        if (targetIds.has(id)) continue // 别把刚用上的目标分类删了
+        const cat = alive.find((c) => c.id === id)
+        if (!cat) continue
+        if (Array.from(targetIds.values()).includes(id)) continue
+
+        const children = await db.bookmarks.where('categoryId').equals(id).toArray()
+        // 只有在「确实空了」的时候才删：没搬走的活书签一个都不能剩
+        const leftover = children.filter((b) => b.deletedAt === 0 && !movedIds.has(b.id))
+        if (leftover.length > 0) continue
+
+        await db.categories.update(id, { deletedAt: ts, updatedAt: ts })
+        removedCategories++
+      }
+    }
+
+    return { moved: updates.length, createdCategories, removedCategories }
+  })
+}
