@@ -1,10 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>我的导航 · 书签收藏</title>
+    <meta name="description" content="本地优先的个人书签导航站，支持分类、标签、搜索、图标自动获取与多设备同步。" />
+    <meta name="theme-color" content="#0b0c12" />
+    <meta name="color-scheme" content="dark light" />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bookmark</title>
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- 图标源与元信息抓取会打这些域，提前建连接省几十毫秒 -->
+    <link rel="dns-prefetch" href="//api.iowen.cn" />
+    <link rel="dns-prefetch" href="//favicon.im" />
+
+    <style>
+      /* 首屏兜底背景，避免 CSS 加载前的白闪 */
+      html[data-theme='dark'] { background: #0a0b10; }
+      html[data-theme='light'] { background: #f5f6fa; }
+      #app { min-height: 100%; }
+    </style>
   </head>
   <body>
     <div id="app"></div>

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "description": "只有 /api/* 才走 Pages Functions。静态资源全部直出 CDN，不消耗 Workers 免费额度（10 万次/天）。",
+  "include": ["/api/*"],
+  "exclude": []
+}
