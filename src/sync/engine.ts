@@ -12,13 +12,22 @@
  * 访问次数 visits 特殊处理成「取最大值」，避免多设备互相把计数改小。
  */
 
-import type { Bookmark, Category } from '~shared/model'
+import type { Bookmark, Category, SyncPayload } from '~shared/model'
 import { shouldOverwrite } from '~shared/model'
 import * as api from '@/api/client'
 import { db, getSyncState, setSyncState } from '@/db/index'
 
 const KEY_LAST_PULLED = 'lastPulledAt'
 const KEY_LAST_PUSHED = 'lastPushedAt'
+
+/**
+ * 单批最多推多少条记录。服务端硬限 2000（TOO_MANY_RECORDS / 413），
+ * 这里留足余量 —— 从 Chrome 导入的书签可能带 dataURL 图标，单条就有好几 KB，
+ * 再叠加 Workers 免费版 10ms CPU 的 JSON 解析开销，分小批反而更稳。
+ */
+const PUSH_MAX_RECORDS = 250
+/** 单批估算体积上限，防止少量「大记录」把请求撑爆 */
+const PUSH_MAX_BYTES = 512 * 1024
 
 export type SyncPhase = 'idle' | 'syncing' | 'ok' | 'error' | 'offline' | 'unauthorized'
 
@@ -58,22 +67,33 @@ async function doSync(options: { force?: boolean; canPush?: boolean }): Promise<
   const shouldPush = options.canPush !== false && (dirtyCats.length > 0 || dirtyMarks.length > 0)
 
   try {
-    const result = shouldPush
-      ? await api.push(lastPulledAt, { categories: dirtyCats, bookmarks: dirtyMarks })
-      : await api.pull(lastPulledAt)
+    let cursor = lastPulledAt
+    let pulled = 0
+    let pushed = 0
 
-    const pulled = await mergeIncoming(result.categories, result.bookmarks)
+    if (shouldPush) {
+      // 大批量导入（比如一次性导进几千条 Chrome 书签）必须分批，
+      // 否则单个请求会被服务端以 413 拒掉，而且会一直卡在那儿重试。
+      for (const chunk of buildPushChunks(dirtyCats, dirtyMarks)) {
+        const result = await api.push(cursor, chunk)
+        pulled += await mergeIncoming(result.categories, result.bookmarks)
+        // 游标跟着往前走，后面几批就不会把前面刚推上去的再拉回来
+        cursor = result.now
+        pushed += chunk.categories.length + chunk.bookmarks.length
+      }
+    } else {
+      const result = await api.pull(cursor)
+      pulled += await mergeIncoming(result.categories, result.bookmarks)
+      cursor = result.now
+    }
 
-    await setSyncState(KEY_LAST_PULLED, result.now)
-    // 只有真推成功了才推进「已推送」游标，否则下次会漏掉这些改动
+    await setSyncState(KEY_LAST_PULLED, cursor)
+    // 只有真推成功了才推进「已推送」游标，否则下次会漏掉这些改动。
+    // 中途某一批失败时整个游标都不动：重推是幂等的（LWW + 主键 upsert），
+    // 宁可多推一遍，也不能留下永远传不上去的记录。
     if (shouldPush) await setSyncState(KEY_LAST_PUSHED, at)
 
-    return {
-      phase: 'ok',
-      pushed: shouldPush ? dirtyCats.length + dirtyMarks.length : 0,
-      pulled,
-      at: Date.now(),
-    }
+    return { phase: 'ok', pushed, pulled, at: Date.now() }
   } catch (err) {
     const e = err as api.ApiError
     const phase: SyncPhase =
@@ -83,6 +103,55 @@ async function doSync(options: { force?: boolean; canPush?: boolean }): Promise<
           ? 'unauthorized'
           : 'error'
     return { phase, pushed: 0, pulled: 0, at: Date.now(), message: e.message }
+  }
+}
+
+/**
+ * 把待推送的记录切成若干批，同时受「条数」和「估算体积」两个上限约束。
+ *
+ * 分类排在书签前面：书签靠 categoryId 引用分类，先建分类后建书签，
+ * 就算中途断了，服务端也不会出现指向不存在分类的孤儿书签。
+ */
+function buildPushChunks(categories: Category[], bookmarks: Bookmark[]): SyncPayload[] {
+  const chunks: SyncPayload[] = []
+  let current: SyncPayload = { categories: [], bookmarks: [] }
+  let count = 0
+  let bytes = 0
+
+  const flush = (): void => {
+    if (count > 0) chunks.push(current)
+    current = { categories: [], bookmarks: [] }
+    count = 0
+    bytes = 0
+  }
+
+  const fits = (size: number): boolean =>
+    count === 0 || (count + 1 <= PUSH_MAX_RECORDS && bytes + size <= PUSH_MAX_BYTES)
+
+  for (const c of categories) {
+    const size = estimateSize(c)
+    if (!fits(size)) flush()
+    current.categories.push(c)
+    count++
+    bytes += size
+  }
+  for (const b of bookmarks) {
+    const size = estimateSize(b)
+    if (!fits(size)) flush()
+    current.bookmarks.push(b)
+    count++
+    bytes += size
+  }
+  flush()
+
+  return chunks
+}
+
+function estimateSize(record: unknown): number {
+  try {
+    return JSON.stringify(record).length
+  } catch {
+    return 1024
   }
 }
 
