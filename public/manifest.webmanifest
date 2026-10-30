@@ -1,0 +1,19 @@
+{
+  "name": "我的导航 · 书签收藏",
+  "short_name": "我的导航",
+  "description": "本地优先的个人书签导航站",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0b10",
+  "theme_color": "#0a0b10",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# 本地开发 API 的数据文件（相当于本地的 D1）
+.dev-data
+
+# Wrangler / Cloudflare 本地状态
+.wrangler
+.dev.vars
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

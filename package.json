@@ -1,22 +1,32 @@
 {
   "name": "bookmark",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "vue-tsc -b && tsc -p tsconfig.worker.json --noEmit",
+    "cf:dev": "npm run build && wrangler pages dev",
+    "cf:deploy": "npm run build && wrangler pages deploy",
+    "db:create": "wrangler d1 create qiyue-bookmark-db",
+    "db:init": "wrangler d1 execute qiyue-bookmark-db --local --file=./migrations/0001_init.sql",
+    "db:init:remote": "wrangler d1 execute qiyue-bookmark-db --remote --file=./migrations/0001_init.sql",
+    "secret:password": "wrangler pages secret put APP_PASSWORD"
   },
   "dependencies": {
+    "dexie": "^4.4.7",
     "vue": "^3.5.44"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261030.1",
     "@types/node": "^24.19.2",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vue/tsconfig": "^0.9.1",
     "typescript": "~6.0.3",
     "vite": "^8.3.5",
-    "vue-tsc": "^3.3.13"
+    "vue-tsc": "^3.3.13",
+    "wrangler": "^4.156.0"
   }
 }

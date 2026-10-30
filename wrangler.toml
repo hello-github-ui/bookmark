@@ -1,0 +1,34 @@
+# Cloudflare Pages 配置
+# 文档: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "qiyue-bookmark"
+compatibility_date = "2025-10-01"
+pages_build_output_dir = "dist"
+
+# ---------------------------------------------------------------- D1 数据库
+# 数据库已创建（2026-10-30，region WNAM）。如需重建：
+#   npm run db:create
+#   npm run db:init:remote
+#
+# ⚠️ binding 必须是 "DB"，代码里用的是 env.DB。
+#    wrangler d1 create 的输出会建议 binding = "qiyue_bookmark_db"，别照抄。
+#
+# （不执行 migration 也行 —— 后端第一次写入时会自动建表，
+#   但手动执行一次能更早发现绑定没配对的问题。）
+[[d1_databases]]
+binding = "DB"
+database_name = "qiyue-bookmark-db"
+database_id = "80f68880-71cd-4dba-b222-f3436e342477"
+
+# ------------------------------------------------------------------ 环境变量
+# PUBLIC_READ  "1" = 访客可以浏览但不能改（默认）； "0" = 不输密码什么都看不到
+# CORS_ORIGINS 同域部署留空即可；前后端分开部署时填前端域名，逗号分隔
+[vars]
+PUBLIC_READ = "1"
+CORS_ORIGINS = ""
+
+# ----------------------------------------------------------------- 机密变量
+# 密码不要写在这个文件里（它会进 Git）。用命令行设置：
+#   npx wrangler pages secret put APP_PASSWORD
+#   npx wrangler pages secret put AUTH_SECRET   # 可选，不设则由密码派生
+# 也可以在 Cloudflare 后台 Settings → Environment variables 里加密保存。
