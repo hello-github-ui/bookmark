@@ -81,11 +81,15 @@ npm run typecheck    # 前端 + Workers 两套 tsconfig 都检查
 
 全程免费，且**同域**——网站能打开，同步就能用，不存在跨域问题，也不用多担心一个域名被墙。
 
+> 📘 要绑自定义域名 `qiyue-bookmark.indevs.in`（Stackryze 注册）的话，
+> 看 **[DEPLOY.md](./DEPLOY.md)** —— 那里是针对该域名写的完整步骤，
+> 包含当前 lame delegation 问题的解法和各种排查。
+
 ### 1. 建 D1 数据库
 
 ```bash
 npx wrangler login
-npx wrangler d1 create bookmark-nav-db
+npx wrangler d1 create qiyue-bookmark-db
 ```
 
 把输出里的 `database_id` 填进 `wrangler.toml` 的 `REPLACE_WITH_YOUR_D1_DATABASE_ID`。
@@ -111,7 +115,7 @@ npm run cf:deploy
 | 构建命令 | `npm run build` |
 | 输出目录 | `dist` |
 
-然后在项目的 **Settings → Bindings** 里加一个 D1 绑定：变量名 `DB`，选 `bookmark-nav-db`。
+然后在项目的 **Settings → Bindings** 里加一个 D1 绑定：变量名 `DB`，选 `qiyue-bookmark-db`。
 
 ### 3. 设访问密码
 
@@ -159,7 +163,7 @@ npx wrangler pages secret put APP_PASSWORD
 | Render（`*.onrender.com`） | ✅ 静态站点免费 | 🟡 能访问但较慢 | 没有后端能力 |
 | **Cloudflare Pages + 自己的域名** | ✅ | 🟢 最稳 | 域名几十块一年，强烈建议 |
 
-绑自己的域名是性价比最高的一步：在 Cloudflare 后台 **Custom domains** 里加一个，走 Cloudflare 的 anycast，比默认的 `pages.dev` 稳不少。想要极致速度就得备案 + 国内 CDN，那是另一个量级的折腾了。
+绑自己的域名是性价比最高的一步：走 Cloudflare 的 anycast，而且不会被 `pages.dev` 这种「整体域名」级别的拦截波及。具体步骤见 **[DEPLOY.md](./DEPLOY.md)**。想要极致速度就得备案 + 国内 CDN，那是另一个量级的折腾了。
 
 **免费额度**（个人书签站完全用不完）：
 

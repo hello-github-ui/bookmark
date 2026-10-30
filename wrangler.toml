@@ -1,21 +1,21 @@
 # Cloudflare Pages 配置
 # 文档: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
 
-name = "bookmark-nav"
+name = "qiyue-bookmark"
 compatibility_date = "2025-10-01"
 pages_build_output_dir = "dist"
 
 # ---------------------------------------------------------------- D1 数据库
 # 部署前先执行：
-#   npx wrangler d1 create bookmark-nav-db
+#   npx wrangler d1 create qiyue-bookmark-db
 # 把输出里的 database_id 填到下面，然后：
-#   npx wrangler d1 execute bookmark-nav-db --remote --file=./migrations/0001_init.sql
+#   npx wrangler d1 execute qiyue-bookmark-db --remote --file=./migrations/0001_init.sql
 #
 # （其实不执行 migration 也行 —— 后端第一次写入时会自动建表，
 #   但手动执行一次能更早发现绑定没配对的问题。）
 [[d1_databases]]
 binding = "DB"
-database_name = "bookmark-nav-db"
+database_name = "qiyue-bookmark-db"
 database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
 
 # ------------------------------------------------------------------ 环境变量

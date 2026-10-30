@@ -14,7 +14,7 @@
 
 services:
   - type: web
-    name: bookmark-nav
+    name: qiyue-bookmark
     runtime: static
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist

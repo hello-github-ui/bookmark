@@ -10,9 +10,9 @@
     "typecheck": "vue-tsc -b && tsc -p tsconfig.worker.json --noEmit",
     "cf:dev": "npm run build && wrangler pages dev",
     "cf:deploy": "npm run build && wrangler pages deploy",
-    "db:create": "wrangler d1 create bookmark-nav-db",
-    "db:init": "wrangler d1 execute bookmark-nav-db --local --file=./migrations/0001_init.sql",
-    "db:init:remote": "wrangler d1 execute bookmark-nav-db --remote --file=./migrations/0001_init.sql",
+    "db:create": "wrangler d1 create qiyue-bookmark-db",
+    "db:init": "wrangler d1 execute qiyue-bookmark-db --local --file=./migrations/0001_init.sql",
+    "db:init:remote": "wrangler d1 execute qiyue-bookmark-db --remote --file=./migrations/0001_init.sql",
     "secret:password": "wrangler pages secret put APP_PASSWORD"
   },
   "dependencies": {
