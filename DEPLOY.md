@@ -97,8 +97,19 @@ npm run cf:deploy          # = npm run build && wrangler pages deploy
 ### 3. 设置访问密码
 
 ```bash
-npx wrangler pages secret put APP_PASSWORD
+npx wrangler pages secret put APP_PASSWORD   # 或 npm run secret:password
 ```
+
+> ⚠️ **设完 secret 必须再部署一次。**
+> Cloudflare Pages 的环境变量和 secret 是在部署那一刻注入进该次部署的，
+> 之后新增的不会回头作用于已有部署。
+>
+> ```bash
+> npm run cf:deploy    # 让新 secret 生效
+> ```
+>
+> 没重新部署的话 `/api/auth/status` 会返回 `"hasPassword":false`，
+> 站点能打开但同步是关着的。
 
 | 变量 | 值 | 说明 |
 | --- | --- | --- |
@@ -200,6 +211,8 @@ Cloudflare Pages 支持**外部 DNS**：域名不在 Cloudflare 也能绑，前�
 | **522** | 手动建了 CNAME 但没在 Pages 里添加自定义域名 | 回到第 7 步走正规流程 |
 | **DNS_PROBE_FINISHED_NXDOMAIN** | NS 还没生效 | 等，或 `dig NS` 确认 |
 | Cloudflare 一直 Pending | Stackryze 那边 NS 没改成功 | 回第 5 步核对拼写 |
+| `hasPassword:false`（但密码确实设过了） | secret 是在设置**之后**的部署才生效的 | 再跑一次 `npm run cf:deploy` |
+| `hasDatabase:false` | D1 绑定名不是 `DB` | 查 `wrangler.toml`，或后台 Settings → Bindings |
 | 站点能开但左下角显示「本地模式」 | D1 没绑定或没设密码 | 查 Settings → Bindings 有没有 `DB`，以及 `APP_PASSWORD` |
 | 显示「云端已就绪，待解锁」 | 正常，还没输密码 | 设置 → 同步 → 输密码 |
 

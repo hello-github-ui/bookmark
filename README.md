@@ -121,6 +121,7 @@ npm run cf:deploy
 
 ```bash
 npx wrangler pages secret put APP_PASSWORD
+npm run cf:deploy    # ⚠️ secret 要重新部署才生效
 ```
 
 或在后台 **Settings → Variables and Secrets** 里加密保存。
