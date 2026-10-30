@@ -37,6 +37,7 @@ export interface ModalState {
   commandPalette: boolean
   shortcuts: boolean
   bulkAdd: boolean
+  organize: boolean
 }
 
 export const modals = reactive<ModalState>({
@@ -46,6 +47,7 @@ export const modals = reactive<ModalState>({
   commandPalette: false,
   shortcuts: false,
   bulkAdd: false,
+  organize: false,
 })
 
 /** 正在编辑的对象；为 null 表示「新建」 */

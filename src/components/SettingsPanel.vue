@@ -430,6 +430,18 @@ const usagePercent = computed(() => {
 
       <div class="row">
         <div class="row__text">
+          <h3>智能整理</h3>
+          <p>按网站功能把导入的文件夹目录重新归类，原层级转成标签保留；执行前可逐条预览调整</p>
+        </div>
+        <button class="btn btn--ghost" @click="modals.organize = true">
+          <BaseIcon name="sparkles" :size="14" /> 整理书签
+        </button>
+      </div>
+
+      <div class="divider" />
+
+      <div class="row">
+        <div class="row__text">
           <h3>导出</h3>
           <p>JSON 保留全部字段用于备份；HTML 可直接导回浏览器书签栏</p>
         </div>

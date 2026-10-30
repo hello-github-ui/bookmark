@@ -89,10 +89,8 @@ npm run cf:deploy          # = npm run build && wrangler pages deploy
 
 部署完先用 `https://qiyue-bookmark.pages.dev` 验证站点正常，再去搞域名。
 
-> 想要 push 自动部署的话，也可以在 Cloudflare 后台 → Workers & Pages → Create → Pages → 连 Git 仓库，
-> 构建命令 `npm run build`，输出目录 `dist`。
-> 注意：**用 Git 连接的方式，要在项目 Settings → Bindings 里手动加 D1 绑定**（变量名 `DB`），
-> `wrangler.toml` 里的绑定只对命令行部署生效。
+> 本项目用的就是这条命令行路径，对应 Cloudflare 的 **Direct Upload（直接上传）** 模式。
+> 关于「能不能 push 自动部署」，见下面的「日常更新」一节 —— 答案是不能，而且这个选择不可逆。
 
 ### 3. 设置访问密码
 
@@ -179,6 +177,68 @@ dig qiyue-bookmark.indevs.in NS +short
 之后所有改动 3 秒后自动推送到 D1，换设备打开自动拉取合并。
 
 ---
+
+## 日常更新：改完代码怎么上线
+
+```bash
+git pull                 # 或改完自己的代码
+npm run cf:deploy        # = npm run build && wrangler pages deploy
+```
+
+就这两步。构建在本地跑，产物直接传到 Cloudflare。
+
+### ⚠️ push 到 GitHub 不会触发部署
+
+这点必须记牢，否则改完代码会以为已经上线了：
+
+`qiyue-bookmark` 是用 `wrangler pages deploy` 创建的，属于 **Direct Upload 模式**。
+这种项目和 Git 仓库之间**没有任何连接** —— Cloudflare 根本不知道仓库存在。
+合并 PR、push master，统统不会触发任何部署。
+
+而且 **Direct Upload 项目无法转成 Git 集成**，这是 Cloudflare 的硬限制，
+只能新建项目。所以别去后台找「连接仓库」的按钮了，没有。
+
+真要自动部署只有两条路，代价都不小：
+
+| 方案 | 做法 | 代价 |
+| --- | --- | --- |
+| GitHub Actions | 加 workflow，用 `wrangler-action` 推到现有项目 | 要配 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 两个 secret |
+| 新建 Git 项目 | 后台 Create → Pages → Connect to Git | 自定义域名要迁移（有中断）、D1 绑定和密码全部重配、`pages.dev` 名字要换 |
+
+目前的选择是**手动部署**，一条命令的事，不值得为它引入 CI 依赖。
+
+### 改了环境变量之后
+
+| 改了什么 | 要不要重新部署 |
+| --- | --- |
+| 代码 | 要 |
+| `wrangler.toml` 的 `[vars]`（`PUBLIC_READ`、`CORS_ORIGINS`） | 要 |
+| secret（`APP_PASSWORD`） | **要** —— 见上面第 3 步的说明 |
+
+Cloudflare Pages 的变量是在部署那一刻注入到该次部署里的，改完不重新部署等于没改。
+
+> 另外注意：仓库里存在 `wrangler.toml` 时，CLI 部署会以文件里的 `[vars]` 为准，
+> **覆盖掉你在后台改的值**。所以非机密变量要改就改文件，别改后台。
+
+### 每次部署后的健康检查
+
+```bash
+curl -s https://qiyue-bookmark.indevs.in/api/auth/status
+```
+
+```json
+{"backend":"cloudflare-d1","configured":true,"hasDatabase":true,"hasPassword":true,
+ "publicRead":false,"authenticated":false}
+```
+
+`configured:true` 说明 D1 和密码都正常；`publicRead:false` 说明不输密码看不到内容。
+
+```bash
+# 验证匿名访问确实被挡住了
+curl -s 'https://qiyue-bookmark.indevs.in/api/sync?since=0'
+# 期望：{"error":"UNAUTHORIZED"}
+```
+
 
 ## 备选方案（Stackryze 不让改 NS 的话）
 

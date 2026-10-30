@@ -64,6 +64,7 @@ const COMMANDS = computed<Command[]>(() => [
       settings.layout = order[(order.indexOf(settings.layout) + 1) % order.length]
     },
   },
+  { id: 'organize', label: '智能整理书签', icon: 'sparkles', run: () => (modals.organize = true) },
   { id: 'sync', label: '立即同步', icon: 'refresh', run: () => sync({ force: false }) },
   { id: 'export', label: '导出备份 (JSON)', icon: 'download', run: () => exportJSON() },
   { id: 'settings', label: '打开设置', icon: 'settings', run: () => (modals.settings = true) },

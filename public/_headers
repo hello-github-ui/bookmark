@@ -1,11 +1,14 @@
 # Cloudflare Pages 响应头配置
 # 文档: https://developers.cloudflare.com/pages/configuration/headers/
 
+# X-Robots-Tag：个人书签站，别进搜索引擎。
+# robots.txt 只能请求爬虫别抓，这个响应头能让已经抓到的也不建索引。
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
+  X-Robots-Tag: noindex, nofollow
 
 # Vite 产物带内容哈希，可以放心长缓存
 /assets/*
