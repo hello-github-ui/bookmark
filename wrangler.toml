@@ -6,17 +6,19 @@ compatibility_date = "2025-10-01"
 pages_build_output_dir = "dist"
 
 # ---------------------------------------------------------------- D1 数据库
-# 部署前先执行：
-#   npx wrangler d1 create qiyue-bookmark-db
-# 把输出里的 database_id 填到下面，然后：
-#   npx wrangler d1 execute qiyue-bookmark-db --remote --file=./migrations/0001_init.sql
+# 数据库已创建（2026-10-30，region WNAM）。如需重建：
+#   npm run db:create
+#   npm run db:init:remote
 #
-# （其实不执行 migration 也行 —— 后端第一次写入时会自动建表，
+# ⚠️ binding 必须是 "DB"，代码里用的是 env.DB。
+#    wrangler d1 create 的输出会建议 binding = "qiyue_bookmark_db"，别照抄。
+#
+# （不执行 migration 也行 —— 后端第一次写入时会自动建表，
 #   但手动执行一次能更早发现绑定没配对的问题。）
 [[d1_databases]]
 binding = "DB"
 database_name = "qiyue-bookmark-db"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+database_id = "80f68880-71cd-4dba-b222-f3436e342477"
 
 # ------------------------------------------------------------------ 环境变量
 # PUBLIC_READ  "1" = 访客可以浏览但不能改（默认）； "0" = 不输密码什么都看不到
